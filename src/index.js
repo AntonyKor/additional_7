@@ -7,15 +7,10 @@ let solveSudoku = function(matrix) {
     oldMatr = matrix+"";
     matrix = solveAttempt(matrix, singleInRow);
     matrix = solveAttempt(matrix, hiddenInRow);
-
-    
-
-    // console.log("\n\n")
-    // console.log(matrix);
-    // console.log(oldMatr);
-
-    // console.log(++counter);
   }
+
+  while (!isSolved(matrix))
+    matrix = stupidMethod(matrix);
 
 
   // console.log(matrix);
@@ -86,7 +81,7 @@ let hiddenInRow = function(rowH) {
   return rowH;
 }
 
-let checkCols = function(sudokuC, func) {
+let solveCols = function(sudokuC, func) {
   for (let i = 0; i < 9; i++) {
     let row = [];
     
@@ -102,7 +97,7 @@ let checkCols = function(sudokuC, func) {
   return sudokuC
 }
 
-let checkSqrs = function(sudokuSq, func) {
+let solveSqrs = function(sudokuSq, func) {
   for (let i = 0; i < 9; i++) {
     let x0 = i*3, y0 = 0;
     
@@ -156,6 +151,32 @@ let checkSqrs = function(sudokuSq, func) {
   return sudokuSq;
 }
 
+let stupidMethod = function(sudokuSM) {
+  sudokuTemp = JSON.parse(JSON.stringify(sudokuSM));
+  let unsolved;
+
+  for (let i = 0; i < 9; i++)
+    for (let j = 0; j < 9; j++)
+      if (sudokuSM[i][j].length !== 1) {
+        unsolved = [i,j, sudokuSM[i][j]];
+        i = j = 9;
+      }
+  
+      
+  sudokuTemp[unsolved[0]][unsolved[1]] = [unsolved[2][0]]; 
+  // console.log(sudokuTemp);
+
+  let sudokuTempOld;
+  while ((sudokuTemp+"") !== sudokuTempOld) {
+    sudokuTempOld = sudokuTemp+"";
+    sudokuTemp = solveAttempt(sudokuTemp, singleInRow);
+    sudokuTemp = solveAttempt(sudokuTemp, hiddenInRow);
+  }
+
+  // console.log(sudokuTemp);
+  return sudokuTemp;
+}
+
 let isSolved = function(sudokuI) {
   for (let i = 0; i < 9; i++){
     for (let j = 0; j < 9; j++){
@@ -165,27 +186,96 @@ let isSolved = function(sudokuI) {
   return true;
 }
 
+let checkRow = function(rowCH) {
+  let notInRow = [1,2,3,4,5,6,7,8,9];
+  
+  for (let i = 0; i < 9; i++) {
+    let found = false;
+    if (rowCH[i].length === 1)
+      for (let j = 0; j < 9; j++)
+        if (rowCH[i][0] === notInRow[j]){
+          notInRow[j] = 0;
+          found = true;
+        }
+    if (!found) return false;
+  }
+
+  return true;   
+}
+
+let checkCols = function(sudokuCCH) {
+  for (let i = 0; i < 9; i++) {
+    let row = [];
+    
+    for (let j = 0; j < 9; j++)
+      row[j] = sudokuCCH[j][i];
+      
+    if (!checkRow(row)) return false;
+  }
+  return true;
+}
+
+let checkSqrs = function(sudokuSq) {
+  for (let i = 0; i < 9; i++) {
+    let x0 = i*3, y0 = 0;
+    
+    if (x0 > 17) {
+      x0 -= 18;
+      y0 = 6;
+    } else if (x0 > 8) {
+      x0 -= 9;
+      y0 = 3;
+    }
+    
+    let row = [];
+    
+    for (let j = 0; j < 9; j++) {
+      let x = j, y = 0;
+      
+      if (x > 5) {
+        x -= 6;
+        y = 2;
+      } else if (x > 2) {
+        x -= 3;
+        y = 1;
+      }
+      
+      row[j] = sudokuSq[y + y0][x + x0];
+    }
+    
+    if (!checkRow(row)) return false; 
+  }
+  return true;
+}
+
+let isFailed = function(sudokuF) {
+  for (let i = 0; i < 9; i++)
+    if (!func(sudokuF[i])) return false;
+  
+  if (!solveCols(sudokuF) || !solveSqrs(sudokuF)) return false;
+
+  return true;
+}
+
 let solveAttempt = function(sudokuS, func) {
   for (let i = 0; i < 9; i++)
     sudokuS[i] = func(sudokuS[i]);
   
-  sudokuS = checkCols(sudokuS, func);
-  sudokuS = checkSqrs(sudokuS, func);
+  sudokuS = solveCols(sudokuS, func);
+  sudokuS = solveSqrs(sudokuS, func);
 
   return sudokuS;
 }
 
 let outputSudoku = function(sudokuO) {
-  let mat = sudokuO;
-
   for (let i = 0; i < 9; i++)
     for (let j = 0; j < 9; j++)
-      if (mat[i][j].length == 1)
-        mat[i][j] = mat[i][j][0];
+      if (sudokuO[i][j].length == 1)
+      sudokuO[i][j] = sudokuO[i][j][0];
       else
-      mat[i][j] = 0;
+      sudokuO[i][j] = 0;
 
-  return mat;
+  return sudokuO;
 }
 
 let inputSudoku = function(sudokuIn) {
@@ -213,15 +303,15 @@ let inputSudoku = function(sudokuIn) {
 // ]))
 
 // console.log(solveSudoku([
-//   [0, 5, 0, 0, 7, 0, 0, 0, 1],
-//   [8, 7, 6, 0, 2, 1, 9, 0, 3],
-//   [0, 0, 0, 0, 3, 5, 0, 0, 0],
-//   [0, 0, 0, 0, 4, 3, 6, 1, 0],
-//   [0, 4, 0, 0, 0, 9, 0, 0, 2],
-//   [0, 1, 2, 0, 5, 0, 0, 0, 4],
-//   [0, 8, 9, 0, 6, 4, 0, 0, 0],
-//   [0, 0, 0, 0, 0, 7, 0, 0, 0],
-//   [1, 6, 7, 0, 0, 2, 5, 4, 0]
+//   [0, 8, 0, 0, 0, 0, 0, 0, 1],
+//   [0, 0, 4, 3, 0, 0, 9, 8, 0],
+//   [3, 0, 1, 0, 0, 8, 7, 0, 0],
+//   [0, 1, 0, 5, 4, 0, 0, 6, 0],
+//   [0, 0, 0, 2, 9, 0, 4, 1, 0],
+//   [0, 4, 3, 0, 0, 6, 0, 9, 0],
+//   [0, 0, 8, 0, 0, 5, 0, 3, 0],
+//   [0, 6, 7, 0, 3, 9, 5, 0, 8],
+//   [1, 0, 5, 0, 8, 0, 0, 0, 0]
 // ]))
 
 // console.log(hiddenInRow( [ [ 1],[ 2 ],[ 3 ],[ 4 , 3],[ 1 , 2 , 5 ],[ 6 ],[ 7 ],[ 8 ],[ 7, 8, 2 ]]))
